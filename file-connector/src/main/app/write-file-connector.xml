@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+	<http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+	<http:request-config name="HTTP_Request_Configuration" host="training-american-ws.cloudhub.io" port="80" doc:name="HTTP Request Configuration"/>
+	<flow name="write-file-connectorFlow">
+		<http:listener config-ref="HTTP_Listener_Configuration" path="/writeCSV" allowedMethods="GET" doc:name="HTTP"/>
+		<http:request config-ref="HTTP_Request_Configuration" path="/api/flights" method="GET" doc:name="GET /flights"/>
+		<dw:transform-message doc:name="object to CSV" metadata:id="81c6f16e-5033-4f3a-8c02-9cce211f49e7">
+			<dw:input-payload doc:sample="Examples\sample_response.json" mimeType="application/json"/>
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/csv header=false
+---
+payload map ((payload01 , indexOfPayload01) -> {
+	ID: payload01.ID as :string,
+	Code: payload01.code,
+	Price: payload01.price as :string,
+	DepartureDate: payload01.departureDate,
+	Origin: payload01.origin,
+	Destination: payload01.destination,
+	EmptySeats: payload01.emptySeats as :string
+})]]></dw:set-payload>
+		</dw:transform-message>
+		<file:outbound-endpoint path="E:\Mule\Source\Filghts" outputPattern="flights.csv" responseTimeout="10000" doc:name="File"/>
+	</flow>
+</mule>
