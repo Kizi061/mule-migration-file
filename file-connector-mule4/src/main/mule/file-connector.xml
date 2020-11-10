@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:compatibility="http://www.mulesoft.org/schema/mule/compatibility" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd http://www.mulesoft.org/schema/mule/compatibility http://www.mulesoft.org/schema/mule/compatibility/current/mule-compatibility.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+
+    <flow name="csv-to-string-flow">
+        <!--Migration INFO: 'file-to-string-transformer' is not needed in Mule 4 File connector because streams are now repeatable and enabled by default.-->
+        <!--    For more information refer to:-->
+        <!--        * https://docs.mulesoft.com/mule-runtime/4.3/streaming-about-->
+        <!--<file:file-to-string-transformer xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" doc:name="File to String" />-->
+        <logger message="#[payload]" level="INFO" doc:name="Logger" />
+
+    </flow>
+
+    <file:matcher name="file-connector-csv-json-flowMatcher" filenamePattern="regex:.*csv">
+        <!--Migration INFO: 'caseSensitive' is not supported in Mule 4 File connector. The case sensitivity is delegated to the file system.-->
+        <!--    For more information refer to:-->
+        <!--        * https://docs.mulesoft.com/file-connector/1.3/file-on-new-file-->
+        <!--<file:filename-regex-filter xmlns:file="http://www.mulesoft.org/schema/mule/file" pattern=".*csv" caseSensitive="false" />-->
+    </file:matcher>
+
+    <flow name="csv-json-flow">
+        <file:listener directory="E:\Mule\Source" moveToDirectory="E:\Mule\Destination" doc:name="Read CSV file" config-ref="file-connector" recursive="false" renameTo="#[vars.compatibility_inboundProperties.originalFileName]" matcher="file-connector-csv-json-flowMatcher" applyPostActionWhenFailed="false">
+            <!--Migration INFO: 'responseTimeout' was not being used by the file transport.-->
+            <scheduling-strategy>
+                <fixed-frequency frequency="10000" />
+            </scheduling-strategy>
+        </file:listener>
+
+        <compatibility:attributes-to-inbound-properties>
+            <!--Migration WARN: Expressions that query 'inboundProperties' from the message should instead query the message 'attributes'. Remove this component if there are no uses of 'inboundProperties' in expressions or components that rely on 'inboundProperties' (such as 'copy-properties').-->
+            <!--    For more information refer to:-->
+            <!--        * https://docs.mulesoft.com/mule-runtime/4.3/intro-mule-message#inbound-properties-are-now-attributes-->
+            <!--        * https://github.com/mulesoft/mule-migration-assistant/blob/master/docs/user-docs/migration-tool-post-mig.adoc#inbound_properties-->
+        </compatibility:attributes-to-inbound-properties>
+
+        <ee:transform doc:name="Transform Message">
+            <ee:message>
+                <ee:set-payload>%dw 2.0
+output application/json  
+---
+payload</ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <logger message="#[payload]" level="INFO" doc:name="Logger" />
+
+        <compatibility:outbound-properties-to-var>
+            <!--Migration WARN: Instead of using outbound properties in the flow, move the expression that sets the property into the XML attribute (such as 'method') of the operation or listener that accepts the expression.-->
+            <!--    For more information refer to:-->
+            <!--        * https://github.com/mulesoft/mule-migration-assistant/blob/master/docs/user-docs/migration-tool-post-mig.adoc#outbound_properties-->
+        </compatibility:outbound-properties-to-var>
+
+    </flow>
+
+</mule>

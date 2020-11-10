@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:compatibility="http://www.mulesoft.org/schema/mule/compatibility" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mulerequester="http://www.mulesoft.org/schema/mule/mulerequester" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mulerequester http://www.mulesoft.org/schema/mule/mulerequester/current/mule-mulerequester.xsd http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd http://www.mulesoft.org/schema/mule/compatibility http://www.mulesoft.org/schema/mule/compatibility/current/mule-compatibility.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+
+    <file:config name="file-connector" doc:name="File">
+        <file:connection workingDir=".">
+            <reconnection failsDeployment="true" />
+        </file:connection>
+    </file:config>
+
+    <flow name="mule-message-requesterFlow1">
+        <logger message="https://www.youtube.com/watch?v=hmMNMtglHt4" level="INFO" doc:name="Logger" />
+
+    </flow>
+
+    <flow name="mule-message-requesterFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/muleRequest" doc:name="HTTP" allowedMethods="GET">
+            <http:response statusCode="#[migration::HttpListener::httpListenerResponseSuccessStatusCode(vars)]">
+                <!--Migration WARN: Avoid using an outbound property to determine the status code.-->
+                <!--    For more information refer to:-->
+                <!--        * https://github.com/mulesoft/mule-migration-assistant/blob/master/docs/user-docs/migration-tool-post-mig.adoc#outbound_properties-->
+                <http:headers>#[migration::HttpListener::httpListenerResponseHeaders(vars)]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.statusCode default migration::HttpListener::httpListenerResponseErrorStatusCode(vars)]">
+                <!--Migration WARN: Avoid using an outbound property to determine the status code.-->
+                <!--    For more information refer to:-->
+                <!--        * https://github.com/mulesoft/mule-migration-assistant/blob/master/docs/user-docs/migration-tool-post-mig.adoc#outbound_properties-->
+                <http:headers>#[migration::HttpListener::httpListenerResponseHeaders(vars)]</http:headers>
+            </http:error-response>
+        </http:listener>
+
+        <compatibility:attributes-to-inbound-properties>
+            <!--Migration WARN: Expressions that query 'inboundProperties' from the message should instead query the message 'attributes'. Remove this component if there are no uses of 'inboundProperties' in expressions or components that rely on 'inboundProperties' (such as 'copy-properties').-->
+            <!--    For more information refer to:-->
+            <!--        * https://docs.mulesoft.com/mule-runtime/4.3/intro-mule-message#inbound-properties-are-now-attributes-->
+            <!--        * https://github.com/mulesoft/mule-migration-assistant/blob/master/docs/user-docs/migration-tool-post-mig.adoc#inbound_properties-->
+        </compatibility:attributes-to-inbound-properties>
+
+        <logger message="Start the mule message requester operation" level="INFO" doc:name="Logger" />
+
+        <mulerequester:request resource="file://E:/Mule/Sample/LBS1.csv?connector=file-connector" doc:name="Mule Requester">
+            <!--Migration ERROR: The migration of 'mulerequester' is not supported.-->
+            <!--    For more information refer to:-->
+            <!--        * https://docs.mulesoft.com/mule-runtime/4.3/migration-connectors-->
+            <!--        * https://github.com/mulesoft/mule-migration-assistant/blob/master/docs/user-docs/migration-tool.adoc#unsupported_connectors-->
+        </mulerequester:request>
+
+        <logger message="#[payload]" level="INFO" doc:name="Logger" />
+
+        <compatibility:outbound-properties-to-var>
+            <!--Migration WARN: Instead of using outbound properties in the flow, move the expression that sets the property into the XML attribute (such as 'method') of the operation or listener that accepts the expression.-->
+            <!--    For more information refer to:-->
+            <!--        * https://github.com/mulesoft/mule-migration-assistant/blob/master/docs/user-docs/migration-tool-post-mig.adoc#outbound_properties-->
+        </compatibility:outbound-properties-to-var>
+
+    </flow>
+
+</mule>
